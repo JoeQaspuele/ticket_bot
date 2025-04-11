@@ -8,6 +8,7 @@ from settings import BOT_TOKEN, ADMIN_IDS
 from messages import Messages
 from keyboards import Keyboards
 from database.db_operations import DBOperations
+from handlers.registration import *  # Импорт всех обработчиков регистрации
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
