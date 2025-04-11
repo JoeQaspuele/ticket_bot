@@ -1,9 +1,9 @@
 # main.py
 import logging
 from aiogram import Bot, Dispatcher, types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.fsm.storage.memory import MemoryStorage  # ← Новый путь
+from aiogram.fsm.context import FSMContext  # ← Новый путь
+from aiogram.fsm.state import State, StatesGroup
 from settings import BOT_TOKEN, ADMIN_IDS
 from messages import Messages
 from keyboards import Keyboards
