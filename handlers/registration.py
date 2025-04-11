@@ -1,7 +1,8 @@
 # handlers/registration.py
-from aiogram.dispatcher import FSMContext
 from aiogram import types
-from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.fsm.storage.memory import MemoryStorage  # ← Новый путь
+from aiogram.fsm.context import FSMContext  # ← Новый путь
+from aiogram.fsm.state import State, StatesGroup
 
 #1.1. Состояния (FSM) для регистрации
 
