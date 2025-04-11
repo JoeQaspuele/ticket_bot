@@ -1,10 +1,14 @@
 # handlers/registration.py
-from aiogram import types
-from aiogram.fsm.storage.memory import MemoryStorage  # ← Новый путь
-from aiogram.fsm.context import FSMContext  # ← Новый путь
+from aiogram import Router, types
+from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from database.db_operations import DBOperations
+from messages import Messages
+from keyboards import Keyboards
+import logging
 
-#1.1. Состояния (FSM) для регистрации
+# Создаем роутер для регистрации
+registration_router = Router()
 
 class RegistrationStates(StatesGroup):
     first_name = State()
@@ -12,20 +16,13 @@ class RegistrationStates(StatesGroup):
     middle_name = State()
     city = State()
     confirm = State()
-  
-from messages import Messages
-from keyboards import Keyboards
 
-#1.2. Обработчик кнопки "Регистрация"
-
-@dp.message_handler(text="Регистрация", state=None)
-async def start_registration(message: types.Message):
+@registration_router.message(text="Регистрация", state=None)
+async def start_registration(message: types.Message, state: FSMContext):
     await message.answer(Messages.REGISTER_START)
-    await RegistrationStates.first_name.set()
+    await state.set_state(RegistrationStates.first_name)
 
-#1.3. Обработка ввода имени
-
-@dp.message_handler(state=RegistrationStates.first_name)
+@registration_router.message(state=RegistrationStates.first_name)
 async def process_first_name(message: types.Message, state: FSMContext):
     if not message.text.strip() or message.text.isdigit():
         await message.answer(Messages.EMPTY_FIELD)
@@ -33,10 +30,9 @@ async def process_first_name(message: types.Message, state: FSMContext):
     
     await state.update_data(first_name=message.text.strip())
     await message.answer(Messages.REGISTER_LAST_NAME)
-    await RegistrationStates.last_name.set()
+    await state.set_state(RegistrationStates.last_name)
 
-#1.4 Обработка фамилии, отчества и города
-@dp.message_handler(state=RegistrationStates.last_name)
+@registration_router.message(state=RegistrationStates.last_name)
 async def process_last_name(message: types.Message, state: FSMContext):
     if not message.text.strip() or message.text.isdigit():
         await message.answer(Messages.EMPTY_FIELD)
@@ -44,9 +40,9 @@ async def process_last_name(message: types.Message, state: FSMContext):
     
     await state.update_data(last_name=message.text.strip())
     await message.answer(Messages.REGISTER_MIDDLE_NAME)
-    await RegistrationStates.middle_name.set()
+    await state.set_state(RegistrationStates.middle_name)
 
-@dp.message_handler(state=RegistrationStates.middle_name)
+@registration_router.message(state=RegistrationStates.middle_name)
 async def process_middle_name(message: types.Message, state: FSMContext):
     if not message.text.strip() or message.text.isdigit():
         await message.answer(Messages.EMPTY_FIELD)
@@ -54,38 +50,31 @@ async def process_middle_name(message: types.Message, state: FSMContext):
     
     await state.update_data(middle_name=message.text.strip())
     await message.answer(Messages.REGISTER_CITY)
-    await RegistrationStates.city.set()
+    await state.set_state(RegistrationStates.city)
 
-@dp.message_handler(state=RegistrationStates.city)
+@registration_router.message(state=RegistrationStates.city)
 async def process_city(message: types.Message, state: FSMContext):
     if not message.text.strip() or message.text.isdigit():
         await message.answer(Messages.EMPTY_FIELD)
         return
     
     await state.update_data(city=message.text.strip())
-    
-    # Получаем все введённые данные
     user_data = await state.get_data()
     fio = f"{user_data['last_name']} {user_data['first_name']} {user_data['middle_name']}"
     
-    # Получаем лимит города (из settings.py)
     from settings import CITY_LIMITS
-    city_limit = CITY_LIMITS.get(user_data['city'], 0)  # Если города нет, лимит = 0
+    city_limit = CITY_LIMITS.get(user_data['city'], 0)
     
     await message.answer(
         Messages.REGISTER_CONFIRM(fio, user_data['city'], city_limit),
         reply_markup=Keyboards.confirm_keyboard()
     )
-    await RegistrationStates.confirm.set()
+    await state.set_state(RegistrationStates.confirm)
 
-#1.5. Подтверждение данных
-@dp.message_handler(state=RegistrationStates.confirm)
+@registration_router.message(state=RegistrationStates.confirm)
 async def process_confirm(message: types.Message, state: FSMContext):
     if message.text.lower() == 'да':
         user_data = await state.get_data()
-        
-        # Сохраняем в базу данных
-        from database.db_operations import DBOperations
         session = DBOperations.get_session()
         try:
             DBOperations.add_user(
@@ -108,6 +97,4 @@ async def process_confirm(message: types.Message, state: FSMContext):
     else:
         await message.answer(Messages.ACTION_CANCELLED)
     
-    await state.finish()
-
-
+    await state.clear()
