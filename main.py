@@ -8,7 +8,8 @@ from settings import BOT_TOKEN, ADMIN_IDS
 from messages import Messages
 from keyboards import Keyboards
 from database.db_operations import DBOperations
-from handlers.registration import *  # Импорт всех обработчиков регистрации
+from handlers.registration import registration_router
+
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -18,6 +19,8 @@ logger = logging.getLogger(__name__)
 bot = Bot(token=BOT_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
+# После создания диспетчера
+dp.include_router(registration_router)
 
 # Состояния для регистрации
 class RegistrationStates(StatesGroup):
