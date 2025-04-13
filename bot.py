@@ -5,10 +5,16 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 import settings
 from database import init_db
 from handlers import booking
+from handlers import resigter, booking, booking_with_transfers
 
 
 bot = Bot(token=settings.BOT_TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
+
+resigter.register_handlers(dp)
+booking.register_booking_handlers(dp)
+booking_with_transfers.register_transfer_handlers(dp)
+
 
 async def on_startup(dp):
     await init_db()
