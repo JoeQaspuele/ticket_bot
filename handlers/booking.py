@@ -122,7 +122,7 @@ async def confirm_handler(message: types.Message, state: FSMContext):
         await message.answer("Заказ отменён.")
     await state.finish()
 
-def register_handlers(dp: Dispatcher):
+def register_booking_handlers(dp: Dispatcher):
     dp.register_message_handler(start_booking, lambda m: m.text == "📦 Заказать билет")
     dp.register_message_handler(transport_chosen, state=TicketState.transport_type)
     dp.register_message_handler(date_time_handler, state=TicketState.date_time)
