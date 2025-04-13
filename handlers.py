@@ -212,6 +212,104 @@ def process_route_transfer_1(message):
     bot.send_message(message.chat.id, "Напишите маршрут второго рейса (город пересадки - конечная точка), Пример: Москва - Красноярск.")
     bot.register_next_step_handler(message, process_route_transfer_2)
 
+# ... (предыдущий код)
+
 def process_route_transfer_2(message):
     """Обрабатывает маршрут второго рейса."""
     if not message.text:
+        bot.send_message(message.chat.id, Messages.EMPTY_FIELD)
+        bot.register_next_step_handler(message, process_route_transfer_2)
+        return
+    user_data[message.from_user.id]['route2'] = message.text
+    bot.send_message(message.chat.id, "Напишите название рейса (или номер поезда) и название авиакомпании.")
+    bot.register_next_step_handler(message, process_flight_number)
+
+def process_route(message):
+    """Обрабатывает маршрут без пересадок."""
+    if not message.text:
+        bot.send_message(message.chat.id, Messages.EMPTY_FIELD)
+        bot.register_next_step_handler(message, process_route)
+        return
+    user_data[message.from_user.id]['route'] = message.text
+    bot.send_message(message.chat.id, "Напишите название рейса (или номер поезда) и название авиакомпании.")
+    bot.register_next_step_handler(message, process_flight_number)
+
+def process_flight_number(message):
+    """Обрабатывает номер рейса/поезда и авиакомпанию."""
+    if not message.text:
+        bot.send_message(message.chat.id, Messages.EMPTY_FIELD)
+        bot.register_next_step_handler(message, process_flight_number)
+        return
+    user_data[message.from_user.id]['flight_number'] = message.text
+    if "авиабилет" in user_data[message.from_user.id]['ticket_type']:
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        baggage_yes = types.KeyboardButton("С багажом")
+        baggage_no = types.KeyboardButton("Без багажа")
+        markup.add(baggage_yes, baggage_no)
+        bot.send_message(message.chat.id, "Выберите, с багажом или без?", reply_markup=markup)
+        bot.register_next_step_handler(message, process_baggage)
+    else:
+        bot.send_message(message.chat.id, "Напишите общую стоимость билетов (только числами).")
+        bot.register_next_step_handler(message, process_price)
+
+def process_baggage(message):
+    """Обрабатывает информацию о багаже."""
+    if message.text not in ["С багажом", "Без багажа"]:
+        bot.send_message(message.chat.id, "Пожалуйста, выберите из предложенных вариантов.")
+        bot.register_next_step_handler(message, process_baggage)
+        return
+    user_data[message.from_user.id]['baggage'] = message.text
+    bot.send_message(message.chat.id, "Напишите общую стоимость билетов (только числами).")
+    bot.register_next_step_handler(message, process_price)
+
+def process_price(message):
+    """Обрабатывает стоимость билетов."""
+    if not validate_number(message.text):
+        bot.send_message(message.chat.id, Messages.INVALID_NUMBER)
+        bot.register_next_step_handler(message, process_price)
+        return
+    user_data[message.from_user.id]['price'] = float(message.text)
+    user_id = message.from_user.id
+    user_info = database.get_user(user_id)
+    limit = user_info[2]
+    if user_data[user_id]['price'] > limit:
+        bot.send_message(message.chat.id, "Превышен лимит. Необходимо заполнить заявление на удержание денежных средств.")
+    show_ticket_confirmation(message)
+
+def show_ticket_confirmation(message):
+    """Показывает подтверждение заказа билета."""
+    user_id = message.from_user.id
+    ticket_info = user_data[user_id]
+    fio = database.get_user(user_id)[0]
+    confirmation_message = f"{fio}\n" \
+                           f"Дата и время вылета: {ticket_info['date_time']}\n" \
+                           f"Маршрут: {ticket_info['route']}\n"
+    if 'route2' in ticket_info:
+        confirmation_message += f"Маршрут 2: {ticket_info['route2']}\n"
+    confirmation_message += f"Номер рейса/поезда: {ticket_info['flight_number']}\n"
+    if 'baggage' in ticket_info:
+        confirmation_message += f"Багаж: {ticket_info['baggage']}\n"
+    confirmation_message += f"Сумма билетов: {ticket_info['price']} рублей.\n\n" \
+                           f"Все верно?"
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    confirm_button = types.KeyboardButton("Подтвердить")
+    markup.add(confirm_button)
+    bot.send_message(message.chat.id, confirmation_message, reply_markup=markup)
+    bot.register_next_step_handler(message, save_ticket)
+
+def save_ticket(message):
+    """Сохраняет информацию о билете в базу данных."""
+    if message.text == "Подтвердить":
+        user_id = message.from_user.id
+        ticket_info = user_data[user_id]
+        database.add_ticket(user_id, ticket_info['ticket_type'], ticket_info['date_time'],
+                            ticket_info.get('route'), ticket_info.get('route2'),
+                            ticket_info['flight_number'], ticket_info.get('baggage'),
+                            ticket_info['price'])
+        bot.send_message(message.chat.id, Messages.DATA_SAVED)
+        show_main_menu(message)
+    else:
+        bot.send_message(message.chat.id, Messages.ACTION_CANCELLED)
+        show_main_menu(message)
+
+# ... (остальной код)
