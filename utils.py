@@ -10,3 +10,23 @@ def format_order_data(order):
         f"Сумма: {order['price']} рублей"
     )
 
+def format_ticket_data(ticket, full_name):
+    message = (
+        f"{full_name}\n"
+        f"Дата и время отправления: {ticket['date_time']}\n"
+    )
+
+    if ticket['is_transfer']:
+        message += (
+            f"Маршрут первого участка: {ticket['route']}\n"
+            f"Маршрут второго участка: {ticket['route_2']}\n"
+        )
+    else:
+        message += f"Маршрут: {ticket['route']}\n"
+
+    message += (
+        f"Рейс/поезд: {ticket['flight_number']} {ticket['company']}\n"
+        f"Багаж: {'Включен' if ticket['luggage'] == 'yes' else 'Без багажа'}\n"
+        f"Сумма: {ticket['amount']} рублей"
+    )
+    return message
