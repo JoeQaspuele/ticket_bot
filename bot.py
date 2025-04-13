@@ -4,12 +4,17 @@ from aiogram.utils import executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 import settings
 from database import init_db
+from handlers import booking
+
 
 bot = Bot(token=settings.BOT_TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
 
 async def on_startup(dp):
     await init_db()
+
+booking.register_handlers(dp)
+
 
 @dp.message_handler(commands=['start'])
 async def start_cmd(message: types.Message):
