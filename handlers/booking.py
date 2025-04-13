@@ -88,18 +88,14 @@ async def amount_handler(message: types.Message, state: FSMContext):
     
     data = await state.get_data()
     summary = (
-        f"{data['fio']}
-"
-        f"Дата и время: {data['date_time']}
-"
-        f"Маршрут: {data['route']}
-"
-        f"Рейс: {data['flight_info']}
-"
-        f"Багаж: {data['luggage']}
-"
-        f"Сумма: {amount} рублей."
+    f"{data['fio']}\n"
+    f"Дата и время: {data['date_time']}\n"
+    f"Маршрут: {data['route']}\n"
+    f"Рейс: {data['flight_info']}\n"
+    f"Багаж: {data['luggage']}\n"
+    f"Сумма: {amount} рублей."
     )
+
 
     markup = ReplyKeyboardMarkup(resize_keyboard=True).add("✅ Подтвердить", "❌ Отменить")
     await message.answer(summary + "\n\nПодтвердить заказ?", reply_markup=markup)
