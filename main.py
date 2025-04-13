@@ -9,7 +9,7 @@ from messages import Messages
 from keyboards import Keyboards
 from database.db_operations import DBOperations
 from handlers.registration import registration_router
-
+from handlers.registration import router as registration_router
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -21,6 +21,8 @@ storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 # После создания диспетчера
 dp.include_router(registration_router)
+
+
 
 # Состояния для регистрации
 class RegistrationStates(StatesGroup):
