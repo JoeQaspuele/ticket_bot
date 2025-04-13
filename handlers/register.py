@@ -64,10 +64,19 @@ async def confirm_handler(message: types.Message, state: FSMContext):
                 VALUES (?, ?, ?, ?, ?)
             ''', (message.from_user.id, data['first_name'], data['last_name'], data['middle_name'], data['base_city']))
             await db.commit()
+        
         await message.answer("Вы успешно зарегистрированы!", reply_markup=ReplyKeyboardRemove())
+
+        # 👇 Показываем главное меню после регистрации
+        main_menu = ReplyKeyboardMarkup(resize_keyboard=True)
+        main_menu.add("📦 Заказать билет", "📋 Мои заказы")
+        await message.answer("Выберите действие:", reply_markup=main_menu)
+        
     else:
         await message.answer("Регистрация отменена.")
+
     await state.finish()
+
 
 def register_handlers(dp: Dispatcher):
     dp.register_message_handler(start_register, lambda m: m.text == "📝 Регистрация")
